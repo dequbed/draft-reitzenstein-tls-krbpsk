@@ -1,0 +1,220 @@
+
+
+
+
+TLS                                         N. von Reitzenstein Čerpnjak
+Internet-Draft                                           18 October 2022
+Intended status: Informational                                          
+Expires: 21 April 2023
+
+
+                           TODO - Your title
+                  draft-reitzenstein-tls-krbpsk-latest
+
+Abstract
+
+   This document specifies a TLS PSK key exchange mode using the
+   Kerberos V5 Network Authentication Service ([RFC4120]).
+
+   This allows combining the TLS encryption state machine with the key
+   exchange abilities of Kerberos.
+
+Discussion Venues
+
+   This note is to be removed before publishing as an RFC.
+
+   Discussion of this document takes place on the Transport Layer
+   Security Working Group mailing list (tls@ietf.org), which is archived
+   at https://mailarchive.ietf.org/arch/browse/tls/.
+
+   Source for this draft and an issue tracker can be found at
+   https://github.com/dequbed/draft-reitzenstein-tls-krbpsk.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 21 April 2023.
+
+Copyright Notice
+
+   Copyright (c) 2022 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.
+
+Table of Contents
+
+   1.  Introduction
+   2.  Conventions and Definitions
+   3.  TLS Extensions
+     3.1.  KerberosV5 Application Request Extension
+   4.  The KRB5PSK pre shared key exchange mode
+   5.  Security Considerations
+   6.  IANA Considerations
+   7.  Normative References
+   Acknowledgments
+   Author's Address
+
+1.  Introduction
+
+   TODO Introduction
+
+   "Noooooo, you can't just use Kerberos key material as sources of
+   randomness!  Hahahah TLS-KRB5PSK go brrrrrrrrr"!
+
+2.  Conventions and Definitions
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in
+   BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+3.  TLS Extensions
+
+3.1.  KerberosV5 Application Request Extension
+
+   The "krb5_ap_psk" extension is used to transfer a KerberosV5
+   KRB_AP_REQ message from a client to a server.
+
+   The "extension_data" field of this extension contains a "Krb5ApPsk"
+   value:
+
+   struct {} Empty;
+
+   struct {
+       select (Handshake.msg_type) {
+           case client_hello: opaque authentication_header<1..2^16-1>;
+           case server_hello: select (mutual_required) {
+               case TRUE: opaque authentication_response<1..2^16-1>;
+               case FALSE: Empty;
+           }
+       }
+   } Krb5ApPsk;
+
+   The "authentication_header" field of the extension is set to an
+   encoding of a KerberosV5 KRB_AP_REP message, as specified in
+   [RFC4120], with a key usage of 11 used for the Authenticator.
+
+   The following restrictions apply to a client constructing an
+   KRB_AP_REP and Authenticator: - The mutual-required flag of "ap-
+   options" is set if the client wishes for the server to authenticate
+   itself. - "cksum" MUST be set to the checksum calculated per
+   [RFC4120] over the ClientHello message up to, but excluding, the
+   krb5_ap_psk message. - The optional "seq-number" field MUST NOT be
+   set. - The "subkey" field SHOULD be filled with a high-randomness
+   key.  The value of the subkey SHOULD NOT be reused in future TLS
+   sessions or other applications.
+
+   The Early Secret [RFC8446], Section 7.1 is generated from the subkey
+   or session key using the following procedure when krb5_ap_psk is
+   selected as PSK mechanism: A "protocol-key" is selected.  If the
+   "subkey" field was set in the Authenticator this subkey MUST be used
+   as protocol-key.  Otherwise the "session key" the provided ticket was
+   encrypted with is used as protocol-key.  The key-derivation function
+   [RFC3961], Section 3 specified for the keytype of the protocol-key is
+   used to generate 32 bytes of keymaterial with the selected protocol-
+   key and an usage number of XX (TODO!).  The resulting secret is used
+   as IKM for the PSK step of the TLS key schedule.
+
+   A client MUST NOT send 0-RTT data encrypted with an early traffic
+   secret generated from the krb5_ap_rep extension, although it may send
+   early data encrypted using other PSK modes.  A server that selects
+   krb5_ap_psk as psk MUST ignore all 0-RTT data.
+
+   TODO: This _could_ be safe though.  Figure out how to make sure it
+   is.
+
+   Prior to accepting PSK key establishment using krb5_ap_psk a server
+   MUST validate the provided Authenticator by checking its ability to
+   decrypt it, and checking that the fields "authenticator-vno", and
+   "cksum" contain correct values.  A server MUST reject tickets with
+   Authenticators that are older than a configured time as indicated by
+   the Authenticators "ctime" field.  If no other age is configured a
+   default of 5 minutes SHOULD be used.  In order to accept PSK key
+   establishment using krb5_ap_psk a server sends a "krb5_ap_psk"
+   extension.
+
+   The "authentication_response" field of this extension, if set, is the
+   encoding of a KerberosV5 KRB_AP_REP message, as specified in
+   [RFC4120].  A server MUST send a populated authentication_response
+   value if the mutual-required flag in the the KRB_AP_REQ message
+   provided by the client is set, or abort the handshake.
+
+   A server SHOULD NOT populate the optional 'subkey' field in the
+   EncAPRepPart of the KRB_AP_REP it sends.  A client MUST ignore the
+   value of 'subkey' received by the server.
+
+4.  The KRB5PSK pre shared key exchange mode
+
+   A client indicates willingness to use the KRB5PSK mode by sending a
+   "psk_key_exchange_modes" extension indicating support for the
+   "krb5_dhe_ke" mode.  Additionally the client must send a "key_share"
+   extension and a "krb5_ap_psk" extension populated with an KRB_AP_REQ
+   containing the Kerberos ticket they want to present to the server.  A
+   server indicates to a client that it has selected the KRB5PSK mode by
+   sending a "key_share" extension and a "krb5_ap_psk" extension with
+   its ServerHello response.
+
+5.  Security Considerations
+
+   TODO Security
+
+6.  IANA Considerations
+
+   This document requests assignment of a entry in the TLS
+   PskKeyExchangeMode from IANA for krb5_dhe_ke.  This mode is not
+   marked "Recommended" and the reference is set to this document.
+
+   This document additionally requests assignment for a TLS
+   ExtensionType Entry "krb5_ap_psk" with the values defined in this
+   document and the "Recommended" value of "N".
+
+7.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/rfc/rfc2119>.
+
+   [RFC3961]  Raeburn, K., "Encryption and Checksum Specifications for
+              Kerberos 5", RFC 3961, DOI 10.17487/RFC3961, February
+              2005, <https://www.rfc-editor.org/rfc/rfc3961>.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              DOI 10.17487/RFC4120, July 2005,
+              <https://www.rfc-editor.org/rfc/rfc4120>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
+
+   [RFC8446]  Rescorla, E., "The Transport Layer Security (TLS) Protocol
+              Version 1.3", RFC 8446, DOI 10.17487/RFC8446, August 2018,
+              <https://www.rfc-editor.org/rfc/rfc8446>.
+
+Acknowledgments
+
+   TODO acknowledge.
+
+Author's Address
+
+   Nadja von Reitzenstein Čerpnjak
+   Email: me@dequbed.space
