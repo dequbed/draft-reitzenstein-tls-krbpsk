@@ -19,7 +19,7 @@
 # Change the file extension to match the format (.xml for XML, etc...)
 #
 ###
-title: "TODO - Your title"
+title: "TLS Key Establishment using the Kerberos V5 Network Authentication Service"
 abbrev: "TLS-KRB5PSK"
 category: info
 
@@ -51,7 +51,7 @@ informative:
 
 --- abstract
 
-This document specifies a TLS PSK key exchange mode using the Kerberos V5 Network Authentication Service ({{RFC4120}}).
+This document specifies a TLS PSK key establishment mode using the Kerberos V5 Network Authentication Service ({{RFC4120}}).
 
 This allows combining the TLS encryption state machine with the key exchange abilities of Kerberos.
 
@@ -136,4 +136,4 @@ This document additionally requests assignment for a TLS ExtensionType Entry "kr
 # Acknowledgments
 {:numbered="false"}
 
-TODO acknowledge.
+I blame Sharp for this documents existance.
