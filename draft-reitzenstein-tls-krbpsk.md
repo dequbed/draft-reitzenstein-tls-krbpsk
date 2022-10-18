@@ -27,7 +27,7 @@ docname: draft-reitzenstein-tls-krbpsk-latest
 submissiontype: independent # also: "independent", "IAB", or "IRTF"
 number:
 date:
-consensus: true
+consensus: false
 v: 3
 area: AREA
 workgroup: TLS
@@ -51,7 +51,7 @@ informative:
 
 --- abstract
 
-This document specifies a TLS PSK key exchange mode using the {{Kerberos V5 Network Authentication Service=RFC4120}}.
+This document specifies a TLS PSK key exchange mode using the Kerberos V5 Network Authentication Service ({{RFC4120}}).
 
 This allows combining the TLS encryption state machine with the key exchange abilities of Kerberos.
 
@@ -91,14 +91,14 @@ The "extension_data" field of this extension contains a "Krb5ApPsk" value:
 The "authentication_header" field of the extension is set to an encoding of a KerberosV5 KRB_AP_REP message, as specified in {{RFC4120}}, with a key usage of 11 used for the Authenticator.
 
 The following restrictions apply to a client constructing an KRB_AP_REP and Authenticator:
-- The mutual-required flag of "ap-options" is set if the client wishes for the server to authenticate itself. 
+- The mutual-required flag of "ap-options" is set if the client wishes for the server to authenticate itself.
 - "cksum" MUST be set to the checksum calculated per {{RFC4120}} over the ClientHello message up to, but excluding, the krb5_ap_psk message.
 - The optional "seq-number" field MUST NOT be set.
 - The "subkey" field SHOULD be filled with a high-randomness key. The value of the subkey SHOULD NOT be reused in future TLS sessions or other applications.
 
 The Early Secret {{RFC8446, Section 7.1}} is generated from the subkey or session key using the following procedure when krb5_ap_psk is selected as PSK mechanism:
 A "protocol-key" is selected. If the "subkey" field was set in the Authenticator this subkey MUST be used as protocol-key. Otherwise the "session key" the provided ticket was encrypted with is used as protocol-key.
-The key-derivation function {{RFC3961, Section 3}} specified for the keytype of the protocol-key is used to generate 32 bytes of keymaterial with the selected protocol-key and an usage number of XX (TODO!). 
+The key-derivation function {{RFC3961, Section 3}} specified for the keytype of the protocol-key is used to generate 32 bytes of keymaterial with the selected protocol-key and an usage number of XX (TODO!).
 The resulting secret is used as IKM for the PSK step of the TLS key schedule.
 
 A client MUST NOT send 0-RTT data encrypted with an early traffic secret generated from the krb5_ap_rep extension, although it may send early data encrypted using other PSK modes. A server that selects krb5_ap_psk as psk MUST ignore all 0-RTT data.
@@ -115,8 +115,8 @@ A server SHOULD NOT populate the optional 'subkey' field in the EncAPRepPart of 
 
 # The KRB5PSK pre shared key exchange mode
 
-A client indicates willingness to use the KRB5PSK mode by sending a "psk_key_exchange_modes" extension indicating support for the "krb5_dhe_ke" mode. 
-Additionally the client must send a "key_share" extension and a "krb5_ap_psk" extension populated with an KRB_AP_REQ containing the Kerberos ticket they want to present to the server. 
+A client indicates willingness to use the KRB5PSK mode by sending a "psk_key_exchange_modes" extension indicating support for the "krb5_dhe_ke" mode.
+Additionally the client must send a "key_share" extension and a "krb5_ap_psk" extension populated with an KRB_AP_REQ containing the Kerberos ticket they want to present to the server.
 A server indicates to a client that it has selected the KRB5PSK mode by sending a "key_share" extension and a "krb5_ap_psk" extension with its ServerHello response.
 
 
