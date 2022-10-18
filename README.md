@@ -1,6 +1,6 @@
-# TODO - Your title
+# TLS Key Establishment using the Kerberos V5 Network Authentication Service
 
-This is the working area for the individual Internet-Draft, "TODO - Your title".
+This is the working area for the individual Internet-Draft, "TLS Key Establishment using the Kerberos V5 Network Authentication Service".
 
 * [Editor's Copy](https://dequbed.github.io/draft-reitzenstein-tls-krbpsk/#go.draft-reitzenstein-tls-krbpsk.html)
 * [Datatracker Page](https://datatracker.ietf.org/doc/draft-reitzenstein-tls-krbpsk)
